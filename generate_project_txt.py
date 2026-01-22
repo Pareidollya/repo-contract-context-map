@@ -4,7 +4,9 @@ import pathspec
 
 ROOT_DIR = Path(".").resolve()
 OUTPUT_FILE = "project.txt"
-TARGET_EXTENSION = ".ts"
+
+TARGET_EXTENSIONS = ("ts", "prisma")
+
 BLACKLIST_FILE = "py_blacklist_files.txt"
 
 
@@ -54,6 +56,19 @@ def generate_project_tree(root_dir: Path, spec: pathspec.PathSpec) -> list[str]:
     return tree_lines
 
 
+def should_include_file(filename: str, target_extensions: tuple[str, ...]) -> bool:
+    """
+    Decide se o arquivo deve ser incluído baseado na lista de extensões.
+    A tupla deve conter extensões sem ponto: ex ("ts", "py").
+    """
+    suffix = Path(filename).suffix.lower()  # inclui o ponto: ".ts"
+    if not suffix:
+        return False
+
+    ext = suffix[1:]  # remove o ponto
+    return ext in target_extensions
+
+
 def write_file_contents(root_dir: Path, spec: pathspec.PathSpec, out):
     for current_root, dirs, files in os.walk(root_dir):
         current_root = Path(current_root)
@@ -73,7 +88,7 @@ def write_file_contents(root_dir: Path, spec: pathspec.PathSpec, out):
             if is_ignored(file_path, spec):
                 continue
 
-            if not file.endswith(TARGET_EXTENSION):
+            if not should_include_file(file, TARGET_EXTENSIONS):
                 continue
 
             file_indent = "    " * (level + 1)
