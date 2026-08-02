@@ -1,18 +1,20 @@
 # Contract Context Map
 
-Generate one compact, line-addressable Markdown snapshot from repository contracts, ports, and schemas.
+Generate one compact, line-addressable Markdown snapshot from current repository contracts, domains, ports, and schemas.
 
-Repository-connected agents can keep implementation access. Web assistants can use generated snapshot to plan features against current domain shapes without receiving full source tree.
+Repository-connected agents keep implementation access. External planning assistants receive only current product-facing shapes needed to propose coherent changes.
 
 ## Why this exists
 
-Repository trees show file placement but not data relationships. Full-source exports are large, noisy, slow to refresh, and disclose more implementation than planning usually needs.
+A complete repository, ZIP archive, or source tree is dense context for a chat assistant. Input and context limits reduce how much useful project information the assistant can inspect at once. Architecture-oriented exports also answer a different question: where code lives, not which product concepts and contracts exist today.
 
-Contract Context Map selects only configured semantic files, compacts supported source declarations, and writes one `<repository>_contracts.md` document. Header contains exact line ranges for every extracted module and file.
+Product planning usually needs current domain language, entities, relationships, states, inputs, outputs, outcomes, and constraints. These facts already exist at contract and schema seams. Contract Context Map extracts that smaller evidence set into one `<repository>_contracts.md` document with exact line ranges.
+
+Purpose is not architecture analysis, full repository explanation, or source replacement. Purpose is product alignment: stronger current contracts provide stronger planning evidence. Approach stays stack-neutral because it shares semantic contracts instead of requiring external assistant to understand repository implementation.
 
 ```mermaid
 flowchart LR
-    A[Repository contracts, ports, schemas] --> B[Contract Context Map]
+    A[Repository contracts, domains, ports, schemas] --> B[Contract Context Map]
     B --> C[Portable Markdown snapshot]
     C --> D[ChatGPT, Gemini, or another assistant]
     D --> E[Requirements or implementation plan]
@@ -20,7 +22,7 @@ flowchart LR
     F --> A
 ```
 
-This creates shared context across tools. Snapshot is current implementation evidence, not source of product requirements or architecture policy.
+This creates shared context across tools. Client intent remains source of product requirements. Snapshot keeps proposed requirements and plans coherent with implemented domain state without making current implementation mandatory future architecture.
 
 ## Core behavior
 
@@ -43,6 +45,30 @@ This creates shared context across tools. Snapshot is current implementation evi
 
 ## Quick start
 
+### Agent-assisted setup (recommended)
+
+Defaults demonstrate method; they cannot represent every repository convention. Ask repository-connected coding agent to inspect actual contract seams, integrate tool, and verify generated map before sending snapshot to external assistant.
+
+Reusable setup request:
+
+```text
+Integrate Contract Context Map into this repository.
+
+1. Inspect repository layout and identify product-relevant contracts, domain types,
+   ports, DTOs, and database schemas.
+2. Keep extraction narrow. Do not include full source tree or architecture files.
+3. Copy and adapt extract_contracts.ts without coupling it to current stack.
+4. Create extract-contracts.json with correct roots, contractDirectories,
+   schemaGlobs, excludeGlobs, and moduleMarkers for this repository.
+5. Add one package command for manual snapshot generation.
+6. Generate <repository>_contracts.md and verify Content Map line ranges.
+7. Confirm relevant domains are present and unrelated implementation modules are
+   absent.
+8. Document repository-specific command and refresh policy.
+```
+
+Repository-aware agent performs setup and maintenance. External assistant consumes generated snapshot for product discovery, requirements, or planning.
+
 ### Run from this repository
 
 ```bash
@@ -59,6 +85,8 @@ pnpm extract -- "C:\Users\you\Documents\my-repository" --output "C:\Users\you\Do
 ```
 
 ### Embed in another repository
+
+Use these manual steps when repository-aware agent is unavailable.
 
 1. Copy `extract_contracts.ts` into target repository, for example `tools/extract_contracts.ts`.
 2. Install dependencies:
@@ -232,7 +260,11 @@ Review generated [dummy repository snapshot](dummy_repo/dummy_repo_contracts.md)
 
 ## Configure an external assistant
 
-Any assistant that accepts Markdown files and persistent instructions can use snapshot. Exact UI and file limits depend on provider and account.
+Any assistant that accepts Markdown files and persistent instructions can use snapshot. External assistant does not need repository architecture or full source. Exact UI and file limits depend on provider and account.
+
+### ChatGPT Projects
+
+Create project, upload generated `<repository>_contracts.md` as reference file, and add reusable instruction below to project instructions. Replace snapshot after relevant repository changes. See [official ChatGPT Projects guide](https://help.openai.com/en/articles/10169521-projects-in-chatgpt).
 
 ### Reusable instruction
 
@@ -287,7 +319,7 @@ Generate snapshot in CI after merge, store it as workflow artifact, or publish i
 
 ### Helper agent
 
-Give repository-connected agent one narrow task: run extractor, verify warnings, and return updated snapshot. Planning assistant remains independent from source access.
+Use repository-connected agent as extractor operator. It can inspect current layout, adjust configuration when conventions change, run extraction, verify warnings and map coverage, then return updated snapshot. Keep its task narrow: maintain context bridge, not produce product plan.
 
 ### Scheduled refresh
 
