@@ -1,0 +1,56 @@
+{
+  "name": "my-repository",
+  "roots": [
+    "."
+  ],
+  "output": "my-repository_contracts.md",
+  "contractDirectories": [
+    "contracts",
+    "ports"
+  ],
+  "extensions": [
+    "ts",
+    "tsx",
+    "js",
+    "py",
+    "go",
+    "java",
+    "cs",
+    "proto",
+    "graphql",
+    "json",
+    "yaml",
+    "prisma",
+    "sql"
+  ],
+  "schemaGlobs": [
+    "**/*.schema",
+    "**/*.schema.*",
+    "**/schema.prisma",
+    "**/schema.sql"
+  ],
+  "excludeGlobs": [
+    "**/*.spec.*",
+    "**/*.test.*",
+    "**/.git/**",
+    "**/.next/**",
+    "**/.venv/**",
+    "**/__pycache__/**",
+    "**/node_modules/**",
+    "**/vendor/**",
+    "**/coverage/**",
+    "**/dist/**",
+    "**/build/**",
+    "**/target/**",
+    "**/bin/**",
+    "**/obj/**",
+    "**/generated/**",
+    "**/migrations/**",
+    "**/internal-only/**"
+  ],
+  "moduleMarkers": [
+    "modules",
+    "domains"
+  ],
+  "compact": true
+}

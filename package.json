@@ -1,0 +1,22 @@
+{
+  "name": "contract-context-map",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Generate compact, line-addressable contract context for repository-limited AI assistants.",
+  "type": "module",
+  "scripts": {
+    "extract": "tsx extract_contracts.ts",
+    "example": "tsx extract_contracts.ts dummy_repo --config dummy_repo/extractor.config.json --output dummy_repo/dummy_repo_contracts.md",
+    "typecheck": "tsc --noEmit",
+    "test": "pnpm run typecheck && pnpm run example && tsx tests/verify_dummy.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@10.28.1"
+}

@@ -1,0 +1,26 @@
+{
+  "name": "dummy_repo",
+  "roots": [
+    "."
+  ],
+  "output": "dummy_repo_contracts.md",
+  "excludeGlobs": [
+    "**/*.spec.*",
+    "**/*.test.*",
+    "**/.git/**",
+    "**/.next/**",
+    "**/.venv/**",
+    "**/__pycache__/**",
+    "**/node_modules/**",
+    "**/vendor/**",
+    "**/coverage/**",
+    "**/dist/**",
+    "**/build/**",
+    "**/target/**",
+    "**/bin/**",
+    "**/obj/**",
+    "**/generated/**",
+    "**/migrations/**",
+    "**/legacy-billing/**"
+  ]
+}
