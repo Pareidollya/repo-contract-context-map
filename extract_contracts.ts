@@ -1,15 +1,15 @@
-import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { mkdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
+import { globby } from 'globby';
 import * as ts from 'typescript';
 
 /**
  * Contract Context Map
  *
  * Discovery and extraction stay separate by design:
- * 1. ripgrep returns only paths allowed by contract, port, and schema rules.
+ * 1. Node.js glob discovery returns only paths allowed by contract, port, and schema rules.
  * 2. Node.js reads only those matched files.
  * 3. Renderer writes one compact Markdown snapshot with verified line ranges.
  *
@@ -329,41 +329,44 @@ async function resolveRoots(cwd: string, roots: string[]): Promise<string[]> {
   return resolved;
 }
 
-function findFilesWithRipgrep(cwd: string, roots: string[], config: ExtractorConfig): string[] {
-  // `rg --files` respects .gitignore and emits paths only. File contents are read later.
-  const args = ['--files', '--null', '--color=never', '--no-messages'];
-  for (const glob of buildIncludeGlobs(config)) args.push('--glob', glob);
-  for (const glob of config.excludeGlobs) {
-    const normalized = toPosix(glob);
-    args.push('--glob', normalized.startsWith('!') ? normalized : `!${normalized}`);
-  }
-  args.push('--', ...roots);
+function normalizeExcludeGlob(value: string): string {
+  // excludeGlobs always means exclusion. Accept an optional leading `!` for
+  // compatibility with previous configuration files.
+  return toPosix(value).replace(/^!+/, '');
+}
 
-  const result = spawnSync('rg', args, {
-    cwd,
-    windowsHide: true,
-    maxBuffer: 128 * 1024 * 1024,
-  });
+async function findFiles(roots: string[], config: ExtractorConfig): Promise<string[]> {
+  const includeGlobs = buildIncludeGlobs(config);
+  const ignoreGlobs = config.excludeGlobs.map(normalizeExcludeGlob);
 
-  if (result.error) {
-    const message = result.error.message.includes('ENOENT')
-      ? 'ripgrep (rg) is required but was not found on PATH.'
-      : result.error.message;
-    throw new Error(message);
-  }
-  if (result.status !== 0 && result.status !== 1) {
-    const stderr = result.stderr?.toString('utf8').trim();
-    throw new Error(`ripgrep failed with exit code ${result.status}${stderr ? `: ${stderr}` : '.'}`);
+  let matchesByRoot: string[][];
+  try {
+    matchesByRoot = await Promise.all(
+      roots.map((root) => globby(includeGlobs, {
+        cwd: root,
+        absolute: true,
+        onlyFiles: true,
+        unique: true,
+        dot: false,
+        followSymbolicLinks: false,
+        gitignore: true,
+        ignore: ignoreGlobs,
+      })),
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`File discovery failed: ${message}`);
   }
 
-  const output = result.stdout?.toString('utf8') ?? '';
+  // Overlapping roots can return the same file. Keep one canonical entry and
+  // preserve stable output order on all supported operating systems.
   const seen = new Map<string, string>();
-  for (const item of output.split('\0')) {
-    if (!item) continue;
-    const absolute = path.resolve(cwd, item);
+  for (const match of matchesByRoot.flat()) {
+    const absolute = path.resolve(match);
     const key = process.platform === 'win32' ? absolute.toLowerCase() : absolute;
     if (!seen.has(key)) seen.set(key, absolute);
   }
+
   return [...seen.values()].sort((left, right) => toPosix(left).localeCompare(toPosix(right), 'en'));
 }
 
@@ -758,7 +761,7 @@ async function main(): Promise<void> {
 
   const config = await loadConfig(cwd, cli);
   const roots = await resolveRoots(cwd, config.roots);
-  const matchedPaths = findFilesWithRipgrep(cwd, roots, config);
+  const matchedPaths = await findFiles(roots, config);
   if (matchedPaths.length === 0) {
     throw new Error('No files matched configured contract, port, or schema criteria. Existing output was not changed.');
   }

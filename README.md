@@ -26,7 +26,7 @@ This creates shared context across tools. Client intent remains source of produc
 
 ## Core behavior
 
-- Uses `rg --files` for fast path discovery.
+- Uses native Node.js glob discovery for fast path selection.
 - Reads content only from files that match configured criteria.
 - Finds files below `contracts` and `ports` directories by default.
 - Includes Prisma, SQL, and generic schema files.
@@ -41,8 +41,8 @@ This creates shared context across tools. Client intent remains source of produc
 ## Requirements
 
 - Node.js 20 or newer
-- pnpm
-- [ripgrep](https://github.com/BurntSushi/ripgrep) available as `rg` on `PATH`
+
+Node.js is the only system-level requirement. Install project dependencies with npm, pnpm, or another Node.js package manager. No ripgrep, PowerShell, Bash, or other operating-system command is required.
 
 ## Quick start
 
@@ -93,7 +93,7 @@ Use these manual steps when repository-aware agent is unavailable.
 2. Install dependencies:
 
 ```bash
-pnpm add --save-dev tsx typescript @types/node
+pnpm add --save-dev tsx typescript @types/node globby
 ```
 
 3. Add package script:
@@ -144,7 +144,7 @@ Each command produces independent context for corresponding product or assistant
 Version 2 replaces `extract.py` tree/full export model:
 
 - Python and hard-coded `TARGET_DIRS` are removed.
-- Node.js, TypeScript, pnpm, and ripgrep are now required.
+- Node.js replaces Python and operating-system discovery tools. TypeScript and glob support are installed as project dependencies.
 - Positional target and optional JSON replace source edits.
 - Full source trees are no longer exported.
 - Output changes from large `.txt` dumps to focused, navigable Markdown contract snapshots.
@@ -167,7 +167,7 @@ Schemas match:
 **/schema.sql
 ```
 
-Default exclusions cover tests, dependencies, virtual environments, generated files, coverage, build output, and migrations. ripgrep also respects repository ignore rules.
+Default exclusions cover tests, dependencies, virtual environments, generated files, coverage, build output, and migrations. Node.js discovery also respects applicable `.gitignore` rules.
 
 Folders such as `dto`, `entities`, `interfaces`, or project-specific names are not assumed. Add them only when they represent useful semantic context in target repository.
 
@@ -202,7 +202,7 @@ Supported fields:
 - `contractDirectories`: semantic directory names to include.
 - `extensions`: allowed contract and port file extensions.
 - `schemaGlobs`: schema patterns.
-- `excludeGlobs`: ripgrep exclusion patterns, similar to ignore rules.
+- `excludeGlobs`: glob patterns excluded during Node.js file discovery.
 - `moduleMarkers`: path segments whose next segment names a module.
 - `ignoreCharacters`: characters removed from extracted file content after parsing and compaction.
 - `compact`: TypeScript and JavaScript declaration compaction.
@@ -214,6 +214,8 @@ Configuration precedence:
 3. CLI target, output, and raw-mode overrides.
 
 Arrays replace defaults. Copy required default exclusions when overriding `excludeGlobs`.
+
+Discovery uses `globby` with `gitignore: true`. Glob patterns use forward slashes on all platforms. The extractor does not spawn shell commands or depend on platform-specific file discovery.
 
 `extract-contracts.json` is loaded automatically from current working directory. Use `--config` when file has another name or location.
 

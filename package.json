@@ -10,11 +10,12 @@
     "typecheck": "tsc --noEmit",
     "test": "pnpm run typecheck && pnpm run example && tsx tests/verify_dummy.ts"
   },
-  "devDependencies": {
-    "@types/node": "^24.13.3",
-    "tsx": "^4.20.0",
-    "typescript": "^5.9.3"
-  },
+"devDependencies": {
+  "@types/node": "^24.13.3",
+  "globby": "^16.2.2",
+  "tsx": "^4.20.0",
+  "typescript": "^5.9.3"
+},
   "engines": {
     "node": ">=20"
   },
