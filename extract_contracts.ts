@@ -28,6 +28,7 @@ type ExtractorConfig = {
   schemaGlobs: string[];
   excludeGlobs: string[];
   moduleMarkers: string[];
+  ignoreCharacters: string;
   compact: boolean;
 };
 
@@ -127,6 +128,7 @@ const DEFAULT_CONFIG: ExtractorConfig = {
     '**/migrations/**',
   ],
   moduleMarkers: ['modules', 'domains'],
+  ignoreCharacters: '',
   compact: true,
 };
 
@@ -140,6 +142,7 @@ const CONFIG_KEYS = new Set<keyof ExtractorConfig>([
   'schemaGlobs',
   'excludeGlobs',
   'moduleMarkers',
+  'ignoreCharacters',
   'compact',
 ]);
 
@@ -246,6 +249,12 @@ function validateOverrides(value: unknown): Partial<ExtractorConfig> {
   if (input.schemaGlobs !== undefined) result.schemaGlobs = requireStringArray(input.schemaGlobs, 'schemaGlobs');
   if (input.excludeGlobs !== undefined) result.excludeGlobs = requireStringArray(input.excludeGlobs, 'excludeGlobs');
   if (input.moduleMarkers !== undefined) result.moduleMarkers = requireStringArray(input.moduleMarkers, 'moduleMarkers');
+  if (input.ignoreCharacters !== undefined) {
+    if (typeof input.ignoreCharacters !== 'string') {
+      throw new Error('Configuration field "ignoreCharacters" must be a string.');
+    }
+    result.ignoreCharacters = input.ignoreCharacters;
+  }
   if (input.compact !== undefined) {
     if (typeof input.compact !== 'boolean') {
       throw new Error('Configuration field "compact" must be a boolean.');
@@ -419,6 +428,31 @@ function compactText(source: string): string {
   return collapseBlankLines(source.replaceAll('\r\n', '\n').replaceAll('\r', '\n').split('\n')).join('\n');
 }
 
+function removeIgnoredCharacters(source: string, ignoredCharacters: ReadonlySet<string>): string {
+  if (ignoredCharacters.size === 0) return source;
+
+  const keptCharacters: string[] = [];
+  let removedBoundary = false;
+
+  for (const character of source) {
+    if (ignoredCharacters.has(character)) {
+      removedBoundary = true;
+      continue;
+    }
+
+    if (removedBoundary) {
+      const previous = keptCharacters.at(-1);
+      if (previous && !/\s/u.test(previous) && !/\s/u.test(character)) {
+        keptCharacters.push(' ');
+      }
+      removedBoundary = false;
+    }
+
+    keptCharacters.push(character);
+  }
+  return keptCharacters.join('');
+}
+
 function scriptKindFor(filePath: string): ts.ScriptKind {
   switch (path.extname(filePath).toLowerCase()) {
     case '.tsx': return ts.ScriptKind.TSX;
@@ -495,7 +529,12 @@ function languageFor(filePath: string): string {
   return mapping[extension] ?? 'text';
 }
 
-async function extractFile(file: LocatedFile, config: ExtractorConfig, warnings: string[]): Promise<ExtractedFile | null> {
+async function extractFile(
+  file: LocatedFile,
+  config: ExtractorConfig,
+  ignoredCharacters: ReadonlySet<string>,
+  warnings: string[],
+): Promise<ExtractedFile | null> {
   const buffer = await readFile(file.absolutePath);
   if (buffer.includes(0)) {
     warnings.push(`Skipped binary file: ${file.displayPath}`);
@@ -517,6 +556,7 @@ async function extractFile(file: LocatedFile, config: ExtractorConfig, warnings:
     content = compacted.content;
     if (compacted.warning) warnings.push(compacted.warning);
   }
+  content = compactText(removeIgnoredCharacters(content, ignoredCharacters));
   if (!content) {
     warnings.push(`Skipped empty file: ${file.displayPath}`);
     return null;
@@ -725,7 +765,8 @@ async function main(): Promise<void> {
 
   const located = matchedPaths.map((filePath) => locateFile(cwd, filePath, roots));
   const warnings: string[] = [];
-  const extracted = (await Promise.all(located.map((file) => extractFile(file, config, warnings))))
+  const ignoredCharacters = new Set(config.ignoreCharacters);
+  const extracted = (await Promise.all(located.map((file) => extractFile(file, config, ignoredCharacters, warnings))))
     .filter((file): file is ExtractedFile => file !== null)
     .sort(compareExtractedFiles);
 

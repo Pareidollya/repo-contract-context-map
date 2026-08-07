@@ -5,7 +5,11 @@
   ],
   "output": "my-repository_contracts.md",
   "contractDirectories": [
+    "interfaces",
+    "types",
+    "dto",
     "contracts",
+    "repository",
     "ports"
   ],
   "extensions": [
@@ -52,5 +56,6 @@
     "modules",
     "domains"
   ],
+  "ignoreCharacters": "{},;",
   "compact": true
 }

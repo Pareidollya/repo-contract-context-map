@@ -4,6 +4,7 @@
     "."
   ],
   "output": "dummy_repo_contracts.md",
+  "ignoreCharacters": "{},;",
   "excludeGlobs": [
     "**/*.spec.*",
     "**/*.test.*",
