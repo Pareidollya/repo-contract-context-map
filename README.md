@@ -32,6 +32,7 @@ This creates shared context across tools. Client intent remains source of produc
 - Includes Prisma, SQL, and generic schema files.
 - Ignores tests, dependencies, generated output, builds, and migrations by default.
 - Removes TypeScript and JavaScript import noise while preserving declarations.
+- Optionally removes configured characters from final extracted content.
 - Groups extracted files by module.
 - Builds verified `L#####-L#####` ranges in `## Content Map`.
 - Replaces previous snapshot atomically only after successful rendering.
@@ -187,6 +188,7 @@ Copy `extract-contracts.example.json` to `extract-contracts.json` and edit only 
     "**/internal-only/**"
   ],
   "moduleMarkers": ["modules", "domains"],
+  "ignoreCharacters": "{}(),:",
   "compact": true
 }
 ```
@@ -202,6 +204,7 @@ Supported fields:
 - `schemaGlobs`: schema patterns.
 - `excludeGlobs`: ripgrep exclusion patterns, similar to ignore rules.
 - `moduleMarkers`: path segments whose next segment names a module.
+- `ignoreCharacters`: characters removed from extracted file content after parsing and compaction.
 - `compact`: TypeScript and JavaScript declaration compaction.
 
 Configuration precedence:
@@ -330,6 +333,8 @@ For active repositories, run extractor on schedule only when contract or schema 
 TypeScript and JavaScript files use TypeScript compiler parser. Compact output removes imports, re-exports, declaration modifiers, trailing semicolons, excess indentation, and repeated blank lines. It preserves declarations, literal unions, nested shapes, methods, constants, and comments.
 
 Other supported text formats preserve source meaning. Only line endings, trailing whitespace, and repeated blank lines are normalized.
+
+`ignoreCharacters` applies after TypeScript or JavaScript parsing. This prevents configured characters such as `{`, `}`, `(`, and `)` from breaking parser input. Removal is global and also affects comments and string literals in generated snapshot. Extractor inserts one space only when removal would join adjacent tokens. Set field to empty string or omit it to preserve all characters.
 
 Use `--raw` when exact formatting matters.
 
