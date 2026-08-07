@@ -7,11 +7,11 @@ Matched files: 3
 
 ## Content Map
 
-- `database`: L00018-L00047
-  - `prisma/schema.prisma`: L00020-L00047
-- `orders`: L00049-L00112
-  - `src/modules/orders/application/contracts/order.contract.ts`: L00051-L00085
-  - `src/modules/orders/domain/ports/order-repository.port.ts`: L00087-L00112
+- `database`: L00018-L00043
+  - `prisma/schema.prisma`: L00020-L00043
+- `orders`: L00045-L00100
+  - `src/modules/orders/application/contracts/order.contract.ts`: L00047-L00076
+  - `src/modules/orders/domain/ports/order-repository.port.ts`: L00078-L00100
 
 ---
 
@@ -21,29 +21,25 @@ Matched files: 3
 
 ```prisma
 // Minimal persistence model used by contract extraction tests.
-generator client {
+generator client
   provider = "prisma-client-js"
-}
 
-datasource db {
+datasource db
   provider = "postgresql"
   url      = env("DATABASE_URL")
-}
 
-model Order {
+model Order
   id         String      @id @default(cuid())
   customerId String
   totalCents Int
   status     OrderStatus @default(draft)
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
-}
 
-enum OrderStatus {
+enum OrderStatus
   draft
   confirmed
   cancelled
-}
 ```
 
 ## orders
@@ -54,59 +50,51 @@ enum OrderStatus {
 // Application contracts describe CRUD data without exposing NestJS transport details.
 type OrderStatus = 'draft' | 'confirmed' | 'cancelled'
 
-interface OrderView {
+interface OrderView
   id: string
   customerId: string
   totalCents: number
   status: OrderStatus
   createdAt: Date
   updatedAt: Date
-}
 
-interface CreateOrderInput {
+interface CreateOrderInput
   customerId: string
   totalCents: number
-}
 
-interface UpdateOrderInput {
+interface UpdateOrderInput
   orderId: string
   totalCents?: number
   status?: OrderStatus
-}
 
-interface ListOrdersInput {
+interface ListOrdersInput
   customerId?: string
   status?: OrderStatus
-}
 
-interface DeleteOrderInput {
+interface DeleteOrderInput
   orderId: string
-}
 ```
 
 ### `src/modules/orders/domain/ports/order-repository.port.ts`
 
 ```typescript
 // Outbound persistence port contains repository needs for simple CRUD behavior.
-interface OrderRepositoryPort {
+interface OrderRepositoryPort
   create(order: OrderRecord): Promise<OrderRecord>
   findById(id: string): Promise<OrderRecord | null>
   list(filter: OrderFilter): Promise<OrderRecord[]>
   update(order: OrderRecord): Promise<OrderRecord>
   delete(id: string): Promise<boolean>
-}
 
-interface OrderRecord {
+interface OrderRecord
   id: string
   customerId: string
   totalCents: number
   status: 'draft' | 'confirmed' | 'cancelled'
   createdAt: Date
   updatedAt: Date
-}
 
-interface OrderFilter {
+interface OrderFilter
   customerId?: string
   status?: OrderRecord['status']
-}
 ```
